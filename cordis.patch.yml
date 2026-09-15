@@ -1,0 +1,13 @@
+# dsh-plugin-sage-subagent — bundle patch.
+#
+# Only the HOST row is inserted here. The browser half is loaded from the
+# `dsh.client` manifest in package.json; inserting it here would try to load
+# browser code into the Node process.
+#
+# Coexist is the default: this row does NOT disable the official
+# `tool-subagent` row. The runtime coexist/takeover switch lives in the
+# plugin's own settings namespace (`subagent-roles.control`), because the
+# delegation tools this preset contributes are the agent plane's business.
+- insert:
+    - id: subagent-roles
+      name: 'dsh-plugin-sage-subagent'

@@ -1,0 +1,8 @@
+dsh-plugin-sage-subagent
+Copyright 2026 gezi-wen
+
+The settings panel follows the design language of DeepSeek Harness
+(https://github.com/deepseek-ai/deepseek-harness, MIT licensed).
+No DSH source code is copied: sizes, colors, spacing and interaction
+patterns were re-implemented against the published CSS variables (--dsw-*)
+and measured from the shipped client bundles.

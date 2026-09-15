@@ -1,0 +1,60 @@
+{
+  "name": "dsh-plugin-sage-subagent",
+  "version": "0.1.0",
+  "description": "Named, file-defined subagent roles for DeepSeek Harness: persona, subagent-only skills, tool permissions, an ordered model chain with failover, and a runtime coexist/takeover switch for the delegation tool.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/shared",
+    "lib/host",
+    "defaults/roles",
+    "cordis.patch.yml",
+    "NOTICE",
+    "README.md"
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "subagent",
+    "role"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "comments": {
+    "peers": "All @deepseek-ai peers are declared '*' on purpose: the plugin resolves them through the $DSH_HOME/profiles/node_modules junction bridge, so a DSH upgrade never requires touching this file. See README '模块解析'.",
+    "yaml": "The only runtime third-party import; it is provided by the same junction bridge, not by installing this package's dependencies."
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-settings": "*",
+    "@deepseek-ai/dsh-client-locale": "*",
+    "@deepseek-ai/dsh-client-ui-slots": "*",
+    "react": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "author": "gezi-wen"
+}

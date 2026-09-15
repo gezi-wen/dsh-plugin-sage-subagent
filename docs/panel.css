@@ -1,0 +1,390 @@
+/* ============================================================
+   「子代理角色」面板样式 —— 设计定稿（2026-09-15）
+   ------------------------------------------------------------
+   来源：布局稿的 <style>，逐字抽出。
+   落码时整段嵌进 lib/client.js 的 CSS 字符串，不要手改数值 ——
+   这里的每个尺寸/颜色都对着官方包核实过，见 docs/official-ui-language 参考。
+
+   ⚠️ 落码时删掉下面被 #draftbar 选中的那几段（那是布局稿的审阅工具条，
+      不属于插件 UI）。
+   ⚠️ :root 里的 --dsw-* 变量不要带进来 —— 官方运行时已经提供。
+   ============================================================ */
+/* ============================================================
+   子代理角色 面板 · 静态布局稿 v3
+   ------------------------------------------------------------
+   v3 依据侦察报告（见 docs/official-ui-language.md）按官方真实
+   契约重写，修正了 v2 里我“照着感觉猜”的若干数值：
+
+     项              v2（猜的）                v3（官方真实值，有行号证据）
+     内容容器        自加 max-width 552        ✗ 不要自加容器。section 根元素
+                                              就是 .VOzbGW_options 的直接子元素
+                                              外壳给 padding:0 24px 24px
+     滚动容器        .contentScroll            .VOzbGW_options（唯一滚动容器）
+     页头            18px/600 + 13px/20px      16px/24px 500 + 14px/22px tertiary，
+                                              gap 12px，标题下无分隔线
+     表单字段        自创「label 左列+控件右列」 .field 竖排：label(12/500) 上、
+                                              input 下、hint 更下，gap 6px
+     输入框          32px/r9/13px              32px/r8/14px/bg-layer-1
+     按钮            32px/r16/13.5px           36px/r18/14px（sm 28/r14/12）
+     开关轨道        border-l4                 border-l3
+     Tag             圆角 5px 方块             999px 胶囊 / padding 1px 8px /
+                                              lh 17px / w500
+     导航激活        bg-module-platform        --dsw-specific-sidebar-nav-item-active
+     卡片            r12 / bg-base             r16 / bg-layer-3 / hover 换 border-color
+
+   外壳结构（照抄 dsh-client-ui-settings-general）：
+     .overlay > .mask + .panel
+       .panel > nav.nav (188px) + .content
+         .content > header.shellHeader (54px) + .options (flex:1; overflow-y:auto)
+   ============================================================ */
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--dsw-alias-bg-base);
+  color:var(--dsw-alias-label-primary);
+  font-family:var(--dsw-font-family);
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-autospace:normal;
+}
+/* ⚠️ 这里**不要**加 color:inherit。作用域化之后这条规则的特异性是 (0,1,1)，
+   高于按钮自己的 (0,1,0)，会把主按钮的文字色盖成继承色 —— 深色主题下父级是白字，
+   于是白底白字、按钮变成一块空白（2026-09-15 看图才发现）。官方也只加 font-family。
+   写法上注意：本文件的注释里不要出现带前导点的类名，抽取脚本会把它一起前缀化。 */
+button,input,select,textarea{font-family:inherit}
+code{font-family:var(--ds-font-family-code);font-size:12px;color:var(--dsw-alias-label-secondary);
+  background:var(--dsw-alias-markdown-inline-code);border-radius:4px;padding:1px 4px}
+svg{display:block;flex:none}
+.ico{width:16px;height:16px;stroke:currentColor;stroke-width:1.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ico12{width:12px;height:12px}
+.ico14{width:14px;height:14px}
+
+/* ---------- 审阅工具条（不属于设计稿） ---------- */
+#draftbar{
+  position:fixed;z-index:2000;left:8px;top:8px;
+  display:flex;flex-direction:column;gap:3px;width:88px;
+  background:var(--dsw-alias-tooltip-bg);color:#fff;
+  border-radius:14px;padding:7px 6px;box-shadow:0 8px 28px #0003;
+}
+#draftbar span{opacity:.55;font-size:10px;line-height:14px;text-align:center;margin-bottom:2px}
+#draftbar button{height:23px;padding:0 6px;border:0;border-radius:11px;cursor:pointer;
+  background:#ffffff1a;color:#fff;font-size:11px;line-height:16px;white-space:nowrap}
+#draftbar button:hover{background:#ffffff2e}
+#draftbar button[aria-pressed=true]{background:#fff;color:#1b1b1c;font-weight:500}
+/* 视图互斥：先全隐，再只放行当前视图。加视图只需加一行，不再写 O(n²) 的成对规则
+   —— 上一版就是漏了一对，导致空态泄漏到列表页底部 */
+[data-only]{display:none!important}
+body[data-view="list"]     [data-only="list"],
+body[data-view="edit"]     [data-only="edit"],
+body[data-view="empty"]    [data-only="empty"],
+body[data-view="conflict"] [data-only="conflict"]{display:revert!important}
+
+/* ============================================================
+   外壳 —— 逐条对应官方 .VOzbGW_*
+   ============================================================ */
+.overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center}
+.mask{position:absolute;inset:0;background:var(--dsw-alias-bg-mask-1);backdrop-filter:var(--dsw-mask-blur)}
+.panel{
+  position:relative;z-index:1;display:flex;overflow:hidden;
+  width:800px;max-width:calc(100vw - 48px);
+  height:min(800px,100vh - 48px);
+  background:var(--dsw-alias-bg-layer-2);
+  box-shadow:var(--dsw-elevation-prominent);border-radius:32px;
+}
+/* nav：188px / padding 22px 12px 0 / gap 18px */
+.nav{flex:none;width:188px;padding:22px 12px 0;display:flex;flex-direction:column;gap:18px}
+.navTitle{padding:0 12px;font-size:16px;font-weight:500;line-height:24px}
+.navList{display:flex;flex-direction:column;gap:4px}
+.navCell{
+  height:40px;width:100%;display:flex;align-items:center;gap:8px;
+  padding:9px 16px 9px 12px;border:0;border-radius:12px;background:0 0;
+  font-size:14px;font-weight:400;line-height:22px;text-align:left;cursor:pointer;
+}
+.navCell:hover{background:var(--dsw-specific-sidebar-nav-item-hover)}
+.navCell[aria-current=page]{background:var(--dsw-specific-sidebar-nav-item-active)}
+
+.content{flex:1;min-width:0;display:flex;flex-direction:column}
+/* header：54px / padding 20px 14px 8px 10px */
+.shellHeader{
+  flex:none;height:54px;display:flex;justify-content:space-between;align-items:flex-start;
+  gap:8px;padding:20px 14px 8px 10px;
+}
+/* options：唯一滚动容器 —— 这里就是我这份 section 的家，不要再套容器 */
+.options{
+  flex:1;min-height:0;padding:0 24px 24px;overflow-y:auto;overscroll-behavior:contain;
+}
+.options::-webkit-scrollbar{width:10px}
+.options::-webkit-scrollbar-thumb{
+  background:var(--dsw-alias-scrollbar-bg-l2);border-radius:5px;
+  border:3px solid transparent;background-clip:content-box}
+
+/* ---------- 图标按钮 ---------- */
+.iconBtn{
+  width:28px;height:28px;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  border:0;border-radius:50%;background:0 0;color:var(--dsw-alias-label-secondary);cursor:pointer;padding:0;
+}
+.iconBtn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.iconBtn:disabled{color:var(--dsw-alias-label-dimmed);cursor:default}
+
+/* ============================================================
+   section 页头：16/24 500 + 14/22 tertiary，gap 12，无分隔线
+   ============================================================ */
+.sectionTitle{margin:0;font-size:16px;font-weight:500;line-height:24px}
+.sectionIntro{margin:0;font-size:14px;font-weight:400;line-height:22px;color:var(--dsw-alias-label-tertiary)}
+.sectionHead{display:flex;flex-direction:column;gap:12px}
+/* ---------- 分组筛选 ----------
+   激活态沿用官方 message-feedback 的 .chipActive（黑底白字），非激活为描边胶囊。
+   计数 n/m：全开时数字变绿（--dsw-alias-state-success-primary）。 */
+.groupTabs{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.gtab{
+  height:30px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;
+  border:.5px solid var(--dsw-alias-border-l4);border-radius:15px;background:0 0;cursor:pointer;
+  font-size:13px;line-height:18px;color:var(--dsw-alias-label-secondary);
+  transition:background-color var(--ds-transition-duration-fast),border-color var(--ds-transition-duration-fast),color var(--ds-transition-duration-fast);
+}
+.gtab:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.gtab[aria-pressed=true]{
+  border-color:var(--dsw-alias-button-primary-fill);
+  background:var(--dsw-alias-button-primary-fill);
+  color:var(--dsw-alias-label-primary-foreground);
+}
+.gtabCount{font-family:var(--ds-font-family-code);font-size:11px;line-height:16px;color:var(--dsw-alias-label-caption)}
+.gtabCount[data-full=true]{color:var(--dsw-alias-state-success-primary)}
+.gtab[aria-pressed=true] .gtabCount{color:inherit;opacity:.72}
+.blockHeadLabel{font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+.block{margin-top:20px}
+.blockHead{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px;
+}
+.blockTitle{
+  margin:0;flex:1;font-size:12px;font-weight:600;line-height:18px;
+  color:var(--dsw-alias-label-tertiary);
+}
+.blockNote{margin:0 0 10px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+
+/* ============================================================
+   .field —— 官方竖排表单字段（label 上 / 控件中 / hint 下，gap 6）
+   ============================================================ */
+.fields{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.fieldLabel{font-size:12px;font-weight:500;line-height:18px;color:var(--dsw-alias-label-secondary)}
+.fieldHint{font-size:12px;font-weight:400;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+/* 字段级报错：官方 .zGbnIq_error / .At1oFq_invalid 的写法。注意官方那两个类引用的
+   --dsw-alias-label-error 是未定义变量（官方自己的 bug），要用 state-error-primary */
+.input[aria-invalid=true]{border-color:var(--dsw-alias-state-error-primary)}
+.fieldError{font-size:12px;font-weight:400;line-height:18px;color:var(--dsw-alias-state-error-primary)}
+.fieldError b{font-weight:500}
+.linkAction{
+  background:0 0;border:0;padding:0;font:inherit;color:var(--dsw-alias-link);
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+}
+
+.input,.select,.textarea{
+  height:32px;border:.5px solid var(--dsw-alias-border-l4);border-radius:8px;
+  background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);
+  font-size:14px;line-height:22px;padding:0 10px;
+  transition:border-color var(--ds-transition-duration-fast),box-shadow var(--ds-transition-duration-fast);
+}
+.input::placeholder,.textarea::placeholder{color:var(--dsw-alias-label-dimmed)}
+.input:focus,.select:focus,.textarea:focus{
+  outline:none;border-color:var(--dsw-alias-brand-primary)}
+.input.mono{font-family:var(--ds-font-family-code);font-size:13px}
+.input.num{width:112px}
+.select{
+  width:100%;padding:0 26px 0 10px;appearance:none;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--dsw-alias-label-tertiary) 50%),
+                   linear-gradient(135deg,var(--dsw-alias-label-tertiary) 50%,transparent 50%);
+  background-position:calc(100% - 14px) 13px,calc(100% - 10px) 13px;
+  background-size:4px 4px,4px 4px;background-repeat:no-repeat;
+}
+.textarea{
+  height:auto;min-height:168px;resize:vertical;padding:9px 11px;
+  font-family:var(--ds-font-family-code);font-size:12.5px;line-height:20px;
+}
+
+/* ---------- [R] 通用设置行：文字撑开 + 控件靠右 ---------- */
+.row{display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:.5px solid var(--dsw-alias-border-l2)}
+.row:last-child{border-bottom:0}
+.rowText{display:flex;flex-direction:column;flex:1;gap:4px;min-width:0;padding-right:48px}
+.rowTitle{font-size:14px;font-weight:400;line-height:22px}
+.rowDesc{font-size:12px;font-weight:400;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+.rowRight{flex:none;display:flex;align-items:center;gap:8px}
+
+/* ---------- 开关：轨道 border-l3，选中 brand-primary，thumb 16px ---------- */
+.switch{
+  flex:none;width:36px;height:20px;border-radius:10px;border:0;padding:0;cursor:pointer;
+  background:var(--dsw-alias-border-l3);position:relative;
+  transition:background-color var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+.switch::after{
+  content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px #00000040;
+  transition:transform var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+.switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}
+.switch[aria-checked=true]::after{transform:translateX(16px)}
+
+/* ---------- 按钮：36px / r18 / 14px（sm 28 / r14 / 12px） ---------- */
+.btn{
+  height:36px;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:0 14px;border:0;border-radius:18px;cursor:pointer;white-space:nowrap;
+  font-size:14px;font-weight:400;line-height:22px;
+  transition:background-color var(--ds-transition-duration-fast) var(--ds-ease-in-out);
+}
+.btnPrimary{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
+.btnPrimary:hover{background:var(--dsw-alias-button-primary-hover)}
+.btnGhost{background:0 0;color:var(--dsw-alias-label-secondary)}
+.btnGhost:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.btnOutline{background:0 0;border:.5px solid var(--dsw-alias-border-l3)}
+.btnOutline:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.btnDanger{background:0 0;color:var(--dsw-alias-state-error-primary)}
+.btnDanger:hover{background:var(--dsw-alias-interactive-bg-hover-danger)}
+.btnSm{height:28px;border-radius:14px;padding:0 10px;font-size:12px;line-height:18px}
+
+/* ---------- Tag：999px 胶囊 / padding 1px 8px / lh 17px / w500 ---------- */
+.tag{
+  display:inline-flex;align-items:center;gap:4px;white-space:nowrap;
+  border-radius:999px;padding:1px 8px;font-size:11px;line-height:17px;font-weight:500;
+}
+.tag[data-tone=outline]{border:.5px solid var(--dsw-alias-border-l4);color:var(--dsw-alias-label-tertiary)}
+.tag[data-tone=neutral]{background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary)}
+.tag[data-tone=quiet]{color:var(--dsw-alias-label-tertiary)}
+.tag[data-tone=warning]{background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 12%,transparent);color:var(--dsw-alias-state-warn-primary)}
+.tag[data-tone=danger]{background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 10%,transparent);color:var(--dsw-alias-state-error-primary)}
+.tag.mono{font-family:var(--ds-font-family-code);font-size:10.5px}
+
+/* ---------- 卡片：r16 / border-l4 / bg-layer-3 / hover 换 border-color ---------- */
+.card{
+  border:.5px solid var(--dsw-alias-border-l4);border-radius:16px;
+  background:var(--dsw-alias-bg-layer-3);
+  transition:border-color var(--ds-transition-duration-fast) var(--ds-ease-in-out),
+             background-color var(--ds-transition-duration-fast) var(--ds-ease-in-out);
+}
+.card:hover{border-color:var(--dsw-alias-label-dimmed)}
+
+/* ============================================================
+   角色列表
+   ============================================================ */
+.roleList{display:flex;flex-direction:column;gap:8px;margin:12px 0 0}
+/* 外层是 div 不是 button —— 右侧开关也是 button，而 button 不能嵌 button */
+.roleCard{
+  display:flex;align-items:center;gap:8px;width:100%;
+  padding-right:16px;text-align:left;
+}
+/* 卡片主体：点这里进编辑页 */
+.roleMain{
+  flex:1;min-width:0;display:flex;align-items:flex-start;gap:12px;
+  padding:14px 0 14px 16px;border:0;background:0 0;text-align:left;cursor:pointer;
+}
+/* 整卡 hover（含右侧开关区），官方 .qSYn7G_cardContent:hover 同款 */
+.roleCard:hover{background:var(--dsw-alias-interactive-bg-hover)}
+/* 必须显式写这一条：.roleCard 的 display:flex 会盖掉 [hidden] 的 UA 样式 display:none，
+   结果分组筛选"点了没反应"。DOM 断言（hidden 属性确实设上了）看不出这个问题，是看图才发现的 */
+.roleCard[hidden]{display:none}
+/* 停用态：名字降一级。不给整卡加 opacity —— 那会把开关也一起变淡 */
+.roleCard[data-off=true] .roleName{color:var(--dsw-alias-label-tertiary)}
+.roleCard[data-off=true] .roleDesc{color:var(--dsw-alias-label-caption)}
+/* 箭头 = “这块能点进去”，与右侧开关分工：箭头管进入，开关管启停
+   颜色用 label-tertiary（官方 .YyYd_a_chevron 同款）—— 最初写 label-dimmed，
+   在白卡上几乎不可见，是看图才发现的 */
+.roleArrow{flex:none;align-self:center;color:var(--dsw-alias-label-tertiary)}
+.roleCard:hover .roleArrow{color:var(--dsw-alias-label-secondary)}
+.roleBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.roleNameRow{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}
+.roleName{font-size:15px;font-weight:600;line-height:1.4;white-space:nowrap}
+.roleId{font-family:var(--ds-font-family-code);font-size:11.5px;line-height:18px;color:var(--dsw-alias-label-caption);white-space:nowrap}
+.roleDesc{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.roleMeta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px}
+.dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:8px}
+.dotOk{background:var(--dsw-alias-state-success-primary)}
+.dotWarn{background:var(--dsw-alias-state-warn-primary)}
+.dotOff{background:var(--dsw-alias-label-dimmed)}
+
+/* ============================================================
+   模型链候选
+   ============================================================ */
+.chain{display:flex;flex-direction:column;gap:10px}
+.cand{padding:11px 13px;display:flex;flex-direction:column;gap:10px}
+.candTop{display:flex;align-items:center;gap:9px}
+.candIdx{
+  flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
+  background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);
+  font-size:10.5px;font-weight:500;
+}
+.candCtl{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.candCtl .select{flex:1;min-width:0}
+.candActs{flex:none;display:flex;align-items:center;gap:1px}
+.candFoot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.candFoot .select{flex:none;width:auto;min-width:104px}
+.check{display:inline-flex;align-items:center;gap:4px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+.checkOk{color:var(--dsw-alias-state-success-primary)}
+
+/* ---------- 折叠行 ---------- */
+.disc{
+  display:flex;align-items:center;gap:7px;width:100%;
+  height:32px;padding:0 8px;margin:0 -8px;border:0;border-radius:8px;background:0 0;
+  cursor:pointer;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary);text-align:left;
+}
+.disc:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.disc .chev{transition:transform var(--ds-transition-duration-fast) var(--ds-ease-in-out)}
+.disc[aria-expanded=true] .chev{transform:rotate(90deg)}
+.discMeta{margin-left:auto;font-size:12px;line-height:18px;color:var(--dsw-alias-label-caption)}
+.discBody{padding:4px 0 2px}
+.discBody[hidden]{display:none}
+
+/* ---------- chip（多选） ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  height:28px;display:inline-flex;align-items:center;gap:5px;padding:0 11px;
+  border:.5px solid var(--dsw-alias-border-l4);border-radius:14px;background:0 0;
+  font-size:13px;line-height:18px;cursor:pointer;
+  transition:background-color var(--ds-transition-duration-fast),border-color var(--ds-transition-duration-fast),color var(--ds-transition-duration-fast);
+}
+.chip:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.chip[aria-pressed=true]{border-color:var(--dsw-alias-button-primary-fill);
+  background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
+.chip .ico12{opacity:0;transition:opacity var(--ds-transition-duration-fast)}
+.chip[aria-pressed=true] .ico12{opacity:1}
+.chip.mono{font-family:var(--ds-font-family-code);font-size:12px}
+
+/* ---------- 分段控件 ---------- */
+.seg{display:inline-flex;gap:2px;padding:2px;border-radius:16px;background:var(--dsw-alias-bg-module-platform)}
+.seg button{
+  height:24px;padding:0 12px;border:0;border-radius:14px;background:0 0;cursor:pointer;
+  font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);white-space:nowrap;
+}
+.seg button[aria-pressed=true]{background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-weight:500;box-shadow:0 1px 2px #0000000f}
+
+/* ---------- 面包屑（「返回上级」） ---------- */
+.crumbs{display:flex;align-items:center;gap:2px;margin-bottom:6px}
+.crumb{
+  max-width:220px;padding:3px 8px;border:0;border-radius:10px;background:0 0;cursor:pointer;
+  font-size:14px;line-height:22px;color:var(--dsw-alias-label-tertiary);
+  display:inline-flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;
+}
+.crumb:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.crumbSep{color:var(--dsw-alias-label-caption);font-size:13px;line-height:22px}
+.crumbCurrent{padding:3px 8px;font-size:14px;line-height:22px;font-weight:500}
+
+/* ---------- 底部操作条（sticky；官方 section 无此模式，是我加的） ---------- */
+.footer{
+  position:sticky;bottom:-24px;z-index:2;
+  display:flex;align-items:center;gap:10px;
+  margin:16px -24px -24px;padding:13px 24px 24px;
+  background:var(--dsw-alias-bg-layer-2);
+  border-top:.5px solid var(--dsw-alias-border-l2);
+}
+.footerSpacer{flex:1}
+.footerHint{font-size:12px;line-height:18px;color:var(--dsw-alias-label-caption)}
+
+/* ---------- 空态（沿用官方 .zGbnIq_modelEmpty 的虚线框模式） ---------- */
+.empty{
+  border:1px dashed var(--dsw-alias-border-l3);border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  margin-top:12px;padding:26px 24px;text-align:center;
+}
+.emptyTitle{font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
+.emptyDesc{font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);max-width:340px}
