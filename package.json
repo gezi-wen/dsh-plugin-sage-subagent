@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-sage-subagent",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Named, file-defined subagent roles for DeepSeek Harness: persona, subagent-only skills, tool permissions, an ordered model chain with failover, and derived groups.",
   "type": "module",
   "main": "lib/index.js",

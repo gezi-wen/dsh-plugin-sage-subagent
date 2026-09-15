@@ -5,6 +5,22 @@
 
 开箱自带 **4 组 32 个默认角色**；**分组能从角色派生，也能自己建、自己改名**。与官方 `subagent` 工具**并存**。
 
+## 安装
+
+```bash
+# 装进某个 profile（推荐）
+dsh plugin --profile web add dsh-plugin-sage-subagent
+
+# 或者直接在 profile 目录里用 npm / pnpm 装
+cd <DSH_HOME>/profiles/web
+pnpm add dsh-plugin-sage-subagent
+```
+
+装完**重启那个 profile 的实例**，就能在「设置 → 子代理角色」看到面板。
+
+第一次打开时，如果你的 `<DSH_HOME>/.agent-roles/` 是空的，插件会自动铺开这 32 个默认角色；
+里面已经有角色就**完全不动** —— 不覆盖你的文件，也不会把你删掉的内置角色塞回来。
+
 ## 为什么是「role」这个词
 
 DSH 核心已经占用了三个近义词：`profile`（部署 profile，`--profile web`）、
@@ -237,8 +253,11 @@ node tools/sync-panel-css.mjs
 
 ## 开发与验证
 
+> 下面这些是**给从源码仓库开发的人**的。用 npm 装的话，包里只有 `lib/` + `defaults/` + 文档，
+> 没有 `tests/` 和 `tools/`（`files` 白名单刻意如此）。
+
 按技能 `dsh-plugin-development` 的隔离流程：fork/开发 → 挂 `web-test` profile（`link:`）
-→ 三级验证（`--dump-config` 验组合 / 模块解析 / 真启动打标记）→ 你确认后才动生产。
+→ 三级验证（`--dump-config` 验组合 / 模块解析 / 真启动打标记）→ 确认后才动生产。
 
 ```powershell
 # 纯逻辑单测（pwsh 不展开 glob，显式列文件最稳）
@@ -290,3 +309,12 @@ New-Item -ItemType Junction -Path "node_modules\<包名>" -Target "$env:DSH_HOME
 ```
 
 peer 一律写 `*`，DSH 升级后闭包自动变新，本文件不用动。
+
+## License
+
+**Apache-2.0** —— 见 [LICENSE](LICENSE)，署名与第三方说明见 [NOTICE](NOTICE)。
+
+面板 UI 遵循 DeepSeek Harness 官方设计语言（MIT）。**没有复制 DSH 源码**：
+尺寸、颜色、间距与交互模式都是对着官方公布的 CSS 变量（`--dsw-*`）和产物里量出来后
+**重新实现**的 —— 这一点在 NOTICE 里也写明了。
+
