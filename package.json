@@ -1,9 +1,17 @@
 {
   "name": "dsh-plugin-sage-subagent",
-  "version": "0.1.0",
-  "description": "Named, file-defined subagent roles for DeepSeek Harness: persona, subagent-only skills, tool permissions, an ordered model chain with failover, and a runtime coexist/takeover switch for the delegation tool.",
+  "version": "0.1.1",
+  "description": "Named, file-defined subagent roles for DeepSeek Harness: persona, subagent-only skills, tool permissions, an ordered model chain with failover, and derived groups.",
   "type": "module",
   "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gezi-wen/dsh-plugin-sage-subagent.git"
+  },
+  "homepage": "https://github.com/gezi-wen/dsh-plugin-sage-subagent",
+  "bugs": {
+    "url": "https://github.com/gezi-wen/dsh-plugin-sage-subagent/issues"
+  },
   "exports": {
     ".": {
       "default": "./lib/index.js"
